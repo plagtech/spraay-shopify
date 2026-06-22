@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Shopify session storage (required by @shopify/shopify-app-session-storage-prisma)
+model Session {
+  id              String    @id
+  shop            String
+  state           String
+  isOnline        Boolean   @default(false)
+  scope           String?
+  expires         DateTime?
+  accessToken     String?
+  userId          BigInt?
+  firstName       String?
+  lastName        String?
+  email           String?
+  accountOwner    Boolean   @default(false)
+  locale          String?
+  collaborator    Boolean?  @default(false)
+  emailVerified   Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+// Merchant config — wallet + preferences
+model Merchant {
+  id            String        @id @default(cuid())
+  shop          String        @unique
+  walletAddress String?
+  apiKey        String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  payouts       PayoutBatch[]
+}
+
+// A single batch payout execution
+model PayoutBatch {
+  id              String      @id @default(cuid())
+  merchantId      String
+  merchant        Merchant    @relation(fields: [merchantId], references: [id])
+  status          String      @default("pending") // pending, submitted, confirmed, failed
+  chain           String      @default("base")
+  token           String      @default("USDC")
+  totalAmount     String
+  recipientCount  Int
+  txHash          String?
+  blockNumber     Int?
+  fee             String?
+  errorMessage    String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  recipients      Recipient[]
+}
+
+// Individual recipient in a batch
+model Recipient {
+  id            String      @id @default(cuid())
+  batchId       String
+  batch         PayoutBatch @relation(fields: [batchId], references: [id])
+  walletAddress String
+  amount        String
+  name          String?
+  email         String?
+  memo          String?
+  status        String      @default("pending") // pending, paid, failed
+}
