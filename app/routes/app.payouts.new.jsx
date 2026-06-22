@@ -14,7 +14,7 @@ import {
   USDC_BASE,
   BATCH_ABI,
   ERC20_ABI,
-} from "../lib/spraay.server";
+} from "../lib/spraay";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
 
