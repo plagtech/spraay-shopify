@@ -7,9 +7,9 @@ export const config = createConfig({
   connectors: [
     coinbaseWallet({
       appName: "Spraay Payouts",
-      preference: "smartWalletOnly",
+      preference: "all",
     }),
-    injected(),
+    injected({ target: "metaMask" }),
   ],
   transports: {
     [base.id]: http(),
