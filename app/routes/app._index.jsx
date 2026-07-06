@@ -24,7 +24,7 @@ export const loader = async ({ request }) => {
   });
 
   const confirmedBatches = await prisma.payoutBatch.findMany({
-    where: { merchantId: merchant.id, status: "confirmed" },
+    where: { merchantId: merchant.id, status: { in: ["confirmed", "submitted"] } },
     select: { totalAmount: true, recipientCount: true },
   });
 

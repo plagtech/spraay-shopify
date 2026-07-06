@@ -68,11 +68,18 @@ export default function History() {
     failed: "critical",
   };
 
+  const statusDisplayMap = {
+    pending: "Pending",
+    submitted: "Submitted",
+    confirmed: "Confirmed",
+    failed: "Failed",
+  };
+
   return (
     <Page title="Payout History" backAction={{ url: "/app" }}>
       <BlockStack gap="500">
         <ButtonGroup variant="segmented">
-          {["all", "pending", "submitted", "confirmed", "failed"].map((s) => (
+          {["all", "pending", "confirmed", "failed"].map((s) => (
             <Button
               key={s}
               pressed={statusFilter === s}
