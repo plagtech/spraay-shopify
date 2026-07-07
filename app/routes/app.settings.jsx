@@ -2,8 +2,11 @@ import { useState } from "react";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import {
   Page, Card, Text, Banner, Button, TextField,
-  BlockStack, InlineStack, Layout, List,
+  BlockStack, InlineStack, Box, Layout, List, Icon, Badge,
 } from "@shopify/polaris";
+import {
+  StoreIcon, WalletIcon, ExternalSmallIcon,
+} from "@shopify/polaris-icons";
 import { useAccount } from "wagmi";
 import { WalletButton } from "../components/WalletButton";
 import { authenticate } from "../shopify.server";
@@ -72,7 +75,11 @@ export default function Settings() {
   };
 
   return (
-    <Page title="Settings" backAction={{ url: "/app" }}>
+    <Page
+      title="Settings"
+      subtitle="Configure your store's payout wallet and integrations"
+      backAction={{ url: "/app" }}
+    >
       <BlockStack gap="500">
         {saved && (
           <Banner tone="success" onDismiss={() => {}}>
@@ -86,81 +93,122 @@ export default function Settings() {
           </Banner>
         )}
 
-        <Card>
-          <BlockStack gap="300">
-            <Text as="h2" variant="headingMd">Store</Text>
-            <Text as="p" variant="bodyMd">{shop}</Text>
-            <Text as="p" variant="bodySm" tone="subdued">
-              Payouts are sent on Base network using USDC.
-            </Text>
-          </BlockStack>
-        </Card>
+        <Layout>
+          <Layout.AnnotatedSection
+            id="store"
+            title="Store"
+            description="The Shopify store these payouts belong to. Batches settle in USDC on the Base network."
+          >
+            <Card>
+              <BlockStack gap="300">
+                <InlineStack gap="300" blockAlign="center">
+                  <Box background="bg-surface-secondary" padding="200" borderRadius="200">
+                    <Icon source={StoreIcon} tone="base" />
+                  </Box>
+                  <BlockStack gap="050">
+                    <Text as="p" variant="bodyMd" fontWeight="semibold">{shop}</Text>
+                    <Text as="p" variant="bodySm" tone="subdued">Connected store</Text>
+                  </BlockStack>
+                </InlineStack>
+                <InlineStack gap="200">
+                  <Badge tone="info">Base network</Badge>
+                  <Badge tone="success">USDC</Badge>
+                </InlineStack>
+              </BlockStack>
+            </Card>
+          </Layout.AnnotatedSection>
 
-        <Card>
-          <BlockStack gap="300">
-            <Text as="h2" variant="headingMd">Connected Wallet</Text>
-            <WalletButton />
-            <Text as="p" variant="bodySm" tone="subdued">
-              This wallet signs payout transactions. You can also save a default wallet address below.
-            </Text>
-          </BlockStack>
-        </Card>
+          <Layout.AnnotatedSection
+            id="wallet"
+            title="Connected wallet"
+            description="This wallet signs and funds your batch payouts. USDC moves directly from it to your recipients — Spraay is non-custodial and never holds your funds."
+          >
+            <Card>
+              <BlockStack gap="300">
+                <InlineStack gap="200" blockAlign="center">
+                  <Icon source={WalletIcon} tone="subdued" />
+                  <Text as="h3" variant="headingSm">Wallet connection</Text>
+                </InlineStack>
+                <WalletButton />
+                <Text as="p" variant="bodySm" tone="subdued">
+                  Supported: Coinbase Smart Wallet, MetaMask, and other browser wallets.
+                </Text>
+              </BlockStack>
+            </Card>
+          </Layout.AnnotatedSection>
 
-        <Card>
-          <BlockStack gap="400">
-            <Text as="h2" variant="headingMd">Payout Configuration</Text>
+          <Layout.AnnotatedSection
+            id="configuration"
+            title="Payout configuration"
+            description="Set a default wallet address for signing batches, and optionally connect a Spraay API key for advanced automation."
+          >
+            <Card>
+              <BlockStack gap="400">
+                <InlineStack gap="200" blockAlign="end">
+                  <div style={{ flexGrow: 1 }}>
+                    <TextField
+                      label="Default wallet address"
+                      value={walletAddress}
+                      onChange={setWalletAddress}
+                      placeholder="0x..."
+                      monospaced
+                      autoComplete="off"
+                      helpText="The wallet address that will sign batch payout transactions."
+                    />
+                  </div>
+                  {isConnected && (
+                    <Button size="slim" onClick={handleUseConnected}>
+                      Use connected
+                    </Button>
+                  )}
+                </InlineStack>
 
-            <InlineStack gap="200" blockAlign="end">
-              <div style={{ flexGrow: 1 }}>
                 <TextField
-                  label="Default Wallet Address"
-                  value={walletAddress}
-                  onChange={setWalletAddress}
-                  placeholder="0x..."
+                  label="Spraay API key (optional)"
+                  value={apiKey}
+                  onChange={setApiKey}
+                  placeholder="sk_..."
                   monospaced
-                  helpText="The wallet address that will sign batch payout transactions."
+                  autoComplete="off"
+                  helpText="Optional. Used for advanced features like scheduled payouts and Shopify Flow integration."
                 />
-              </div>
-              {isConnected && (
-                <Button size="slim" onClick={handleUseConnected}>
-                  Use Connected
-                </Button>
-              )}
-            </InlineStack>
 
-            <TextField
-              label="Spraay API Key (optional)"
-              value={apiKey}
-              onChange={setApiKey}
-              placeholder="sk_..."
-              monospaced
-              helpText="Optional. Used for advanced features like scheduled payouts and Shopify Flow integration."
-            />
+                <InlineStack align="end">
+                  <Button variant="primary" onClick={handleSave} loading={isSaving}>
+                    Save settings
+                  </Button>
+                </InlineStack>
+              </BlockStack>
+            </Card>
+          </Layout.AnnotatedSection>
 
-            <Button variant="primary" onClick={handleSave} loading={isSaving}>
-              Save Settings
-            </Button>
-          </BlockStack>
-        </Card>
-
-        <Card>
-          <BlockStack gap="300">
-            <Text as="h2" variant="headingMd">About Spraay Payouts</Text>
-            <Text as="p" variant="bodyMd">
-              Spraay enables batch USDC payouts on Base — pay suppliers, affiliates,
-              creators, and employees in a single transaction.
-            </Text>
-            <List>
-              <List.Item>Non-custodial — USDC goes directly from your wallet to recipients</List.Item>
-              <List.Item>0.3% fee per batch (paid on-chain to Spraay Protocol)</List.Item>
-              <List.Item>Up to 200 recipients per batch</List.Item>
-              <List.Item>All transactions verifiable on BaseScan</List.Item>
-            </List>
-            <Button variant="plain" url="https://docs.spraay.app" target="_blank">
-              Documentation ↗
-            </Button>
-          </BlockStack>
-        </Card>
+          <Layout.AnnotatedSection
+            id="about"
+            title="About Spraay Payouts"
+            description="Pay suppliers, affiliates, creators, and employees in a single on-chain transaction."
+          >
+            <Card>
+              <BlockStack gap="300">
+                <List>
+                  <List.Item>Non-custodial — USDC goes directly from your wallet to recipients</List.Item>
+                  <List.Item>0.3% fee per batch, paid on-chain to Spraay Protocol</List.Item>
+                  <List.Item>Up to 200 recipients per batch</List.Item>
+                  <List.Item>Every transaction is verifiable on BaseScan</List.Item>
+                </List>
+                <Box>
+                  <Button
+                    variant="plain"
+                    icon={ExternalSmallIcon}
+                    url="https://docs.spraay.app"
+                    target="_blank"
+                  >
+                    Documentation
+                  </Button>
+                </Box>
+              </BlockStack>
+            </Card>
+          </Layout.AnnotatedSection>
+        </Layout>
       </BlockStack>
     </Page>
   );

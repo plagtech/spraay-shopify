@@ -1,8 +1,12 @@
 import { useLoaderData, useSearchParams } from "@remix-run/react";
 import {
-  Page, Card, Text, Banner, Badge, Button, ButtonGroup,
-  BlockStack, InlineStack, EmptyState, DataTable, Collapsible,
+  Page, Card, Text, Banner, Badge, Button,
+  BlockStack, InlineStack, Box, EmptyState, DataTable, Collapsible,
+  Tabs, Divider, Icon, InlineGrid,
 } from "@shopify/polaris";
+import {
+  ExternalSmallIcon, PlusIcon, CashDollarIcon, TeamIcon, ReceiptIcon,
+} from "@shopify/polaris-icons";
 import { useState } from "react";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
@@ -52,6 +56,29 @@ export const loader = async ({ request }) => {
   };
 };
 
+const STATUS_TONE = {
+  pending: "attention",
+  submitted: "info",
+  confirmed: "success",
+  paid: "success",
+  failed: "critical",
+};
+
+const STATUS_LABEL = {
+  pending: "Pending",
+  submitted: "Submitted",
+  confirmed: "Confirmed",
+  paid: "Paid",
+  failed: "Failed",
+};
+
+const TABS = [
+  { id: "all", content: "All" },
+  { id: "pending", content: "Pending" },
+  { id: "confirmed", content: "Confirmed" },
+  { id: "failed", content: "Failed" },
+];
+
 export default function History() {
   const { batches, statusFilter } = useLoaderData();
   const [, setSearchParams] = useSearchParams();
@@ -60,104 +87,122 @@ export default function History() {
     setSearchParams(status === "all" ? {} : { status });
   };
 
-  const statusToneMap = {
-    pending: "attention",
-    submitted: "info",
-    confirmed: "success",
-    paid: "success",
-    failed: "critical",
-  };
-
-  const statusDisplayMap = {
-    pending: "Pending",
-    submitted: "Submitted",
-    confirmed: "Confirmed",
-    failed: "Failed",
-  };
+  const selectedTab = Math.max(0, TABS.findIndex((t) => t.id === statusFilter));
 
   return (
-    <Page title="Payout History" backAction={{ url: "/app" }}>
+    <Page
+      title="Payout history"
+      subtitle="Every batch you've sent, with on-chain proof"
+      backAction={{ url: "/app" }}
+      primaryAction={{ content: "New payout", url: "/app/payouts/new", icon: PlusIcon }}
+    >
       <BlockStack gap="500">
-        <ButtonGroup variant="segmented">
-          {["all", "pending", "confirmed", "failed"].map((s) => (
-            <Button
-              key={s}
-              pressed={statusFilter === s}
-              onClick={() => handleFilter(s)}
-            >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
-            </Button>
-          ))}
-        </ButtonGroup>
+        <Card padding="0">
+          <Tabs
+            tabs={TABS}
+            selected={selectedTab}
+            onSelect={(idx) => handleFilter(TABS[idx].id)}
+            fitted
+          />
+        </Card>
 
         {batches.length === 0 ? (
           <Card>
             <EmptyState
               heading="No payouts found"
-              action={{ content: "Create Payout", url: "/app/payouts/new" }}
+              image="https://cdn.shopify.com/s/files/1/0262/4071/2726/files/emptystate-files.png"
+              action={{ content: "Create a payout", url: "/app/payouts/new" }}
             >
               <p>
                 {statusFilter !== "all"
                   ? `No ${statusFilter} payouts. Try a different filter.`
-                  : "You haven't sent any payouts yet."}
+                  : "You haven't sent any payouts yet. Your batches will appear here once you do."}
               </p>
             </EmptyState>
           </Card>
         ) : (
-          batches.map((batch) => (
-            <BatchCard
-              key={batch.id}
-              batch={batch}
-              statusToneMap={statusToneMap}
-            />
-          ))
+          <BlockStack gap="400">
+            {batches.map((batch) => (
+              <BatchCard key={batch.id} batch={batch} />
+            ))}
+          </BlockStack>
         )}
       </BlockStack>
     </Page>
   );
 }
 
-function BatchCard({ batch, statusToneMap }) {
+function MiniStat({ icon, label, value }) {
+  return (
+    <InlineStack gap="200" blockAlign="center">
+      <Box background="bg-surface-secondary" padding="150" borderRadius="200">
+        <Icon source={icon} tone="subdued" />
+      </Box>
+      <BlockStack gap="050">
+        <Text as="span" variant="bodyXs" tone="subdued">{label}</Text>
+        <Text as="span" variant="bodyMd" fontWeight="semibold">{value}</Text>
+      </BlockStack>
+    </InlineStack>
+  );
+}
+
+function BatchCard({ batch }) {
   const [open, setOpen] = useState(false);
 
   return (
     <Card>
-      <BlockStack gap="300">
-        <InlineStack align="space-between" blockAlign="center">
+      <BlockStack gap="400">
+        <InlineStack align="space-between" blockAlign="center" wrap={false} gap="300">
           <InlineStack gap="300" blockAlign="center">
-            <Badge tone={statusToneMap[batch.status] || undefined}>
-              {batch.status}
+            <Badge tone={STATUS_TONE[batch.status] || undefined}>
+              {STATUS_LABEL[batch.status] || batch.status}
             </Badge>
-            <BlockStack gap="100">
+            <BlockStack gap="050">
               <Text as="span" variant="headingSm">
-                {batch.recipientCount} recipients — ${batch.totalAmount} {batch.token}
+                ${batch.totalAmount} {batch.token}
               </Text>
               <Text as="span" variant="bodySm" tone="subdued">
-                {new Date(batch.createdAt).toLocaleString()} · Chain: {batch.chain}
-                {batch.fee && ` · Fee: $${batch.fee}`}
+                {new Date(batch.createdAt).toLocaleString(undefined, {
+                  year: "numeric", month: "short", day: "numeric",
+                  hour: "2-digit", minute: "2-digit",
+                })} · {batch.chain}
               </Text>
             </BlockStack>
           </InlineStack>
           {batch.txHash && (
             <Button
               variant="plain"
+              icon={ExternalSmallIcon}
               url={`https://basescan.org/tx/${batch.txHash}`}
               target="_blank"
             >
-              BaseScan ↗
+              BaseScan
             </Button>
           )}
         </InlineStack>
 
+        <Box
+          background="bg-surface-secondary"
+          padding="300"
+          borderRadius="300"
+        >
+          <InlineGrid columns={{ xs: 1, sm: 3 }} gap="300">
+            <MiniStat icon={TeamIcon} label="Recipients" value={batch.recipientCount} />
+            <MiniStat icon={CashDollarIcon} label="Total" value={`$${batch.totalAmount}`} />
+            <MiniStat icon={ReceiptIcon} label="Fee" value={batch.fee ? `$${batch.fee}` : "—"} />
+          </InlineGrid>
+        </Box>
+
         {batch.recipients.length > 0 && (
-          <>
+          <BlockStack gap="200">
             <Button
               variant="plain"
+              disclosure={open ? "up" : "down"}
               onClick={() => setOpen(!open)}
             >
-              {open ? "Hide" : "Show"} {batch.recipients.length} recipients
+              {open ? "Hide recipients" : `Show ${batch.recipients.length} recipients`}
             </Button>
-            <Collapsible open={open}>
+            <Collapsible open={open} id={`batch-${batch.id}-recipients`}>
               <DataTable
                 columnContentTypes={["text", "numeric", "text", "text"]}
                 headings={["Address", "Amount", "Name", "Status"]}
@@ -169,7 +214,7 @@ function BatchCard({ batch, statusToneMap }) {
                 ])}
               />
             </Collapsible>
-          </>
+          </BlockStack>
         )}
 
         {batch.errorMessage && (

@@ -1,9 +1,15 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import {
-  Page, Card, Text, Banner, Button, ButtonGroup, BlockStack,
+  Page, Card, Text, Banner, Button, BlockStack,
   InlineStack, DataTable, DropZone, Badge, Link,
+  Box, Divider, InlineGrid, Icon, TextField, Spinner,
 } from "@shopify/polaris";
+import {
+  WalletIcon, CashDollarIcon, TeamIcon, ReceiptIcon,
+  ImportIcon, ExportIcon, ArrowLeftIcon, CheckCircleIcon,
+  ExternalIcon, InfoIcon, RefreshIcon, ArrowRightIcon,
+} from "@shopify/polaris-icons";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import { WalletButton } from "../components/WalletButton";
@@ -322,7 +328,8 @@ export default function NewPayout() {
 
   return (
     <Page
-      title="New Payout"
+      title="New payout"
+      subtitle="Send USDC to many recipients in one on-chain transaction"
       backAction={{ url: "/app" }}
       primaryAction={primaryAction}
     >
@@ -330,27 +337,30 @@ export default function NewPayout() {
 
         {/* Wallet Card — always visible */}
         <Card>
-          <BlockStack gap="300">
+          <BlockStack gap="400">
             <InlineStack align="space-between" blockAlign="center">
-              <Text as="h2" variant="headingMd">Your Wallet</Text>
-              {isConnected && (
-                <Badge tone="success">Connected</Badge>
-              )}
+              <InlineStack gap="200" blockAlign="center">
+                <Icon source={WalletIcon} tone="base" />
+                <Text as="h2" variant="headingMd">Your wallet</Text>
+              </InlineStack>
+              {isConnected && <Badge tone="success">Connected</Badge>}
             </InlineStack>
 
             <WalletButton />
 
             {isConnected && (
-              <InlineStack gap="400">
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodySm" tone="subdued">USDC Balance</Text>
-                  <Text as="p" variant="headingSm">${balanceFormatted}</Text>
-                </BlockStack>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodySm" tone="subdued">Network</Text>
-                  <Text as="p" variant="headingSm">Base</Text>
-                </BlockStack>
-              </InlineStack>
+              <Box background="bg-surface-secondary" padding="300" borderRadius="300">
+                <InlineGrid columns={{ xs: 1, sm: 2 }} gap="300">
+                  <BlockStack gap="050">
+                    <Text as="p" variant="bodyXs" tone="subdued">USDC balance</Text>
+                    <Text as="p" variant="headingLg">${balanceFormatted}</Text>
+                  </BlockStack>
+                  <BlockStack gap="050">
+                    <Text as="p" variant="bodyXs" tone="subdued">Network</Text>
+                    <Text as="p" variant="headingLg">Base</Text>
+                  </BlockStack>
+                </InlineGrid>
+              </Box>
             )}
 
             {!isConnected && (
@@ -377,58 +387,57 @@ export default function NewPayout() {
         {step === STEPS.UPLOAD && (
           <Card>
             <BlockStack gap="400">
-              <Text as="h2" variant="headingMd">Upload Recipients</Text>
-              <Text as="p" variant="bodyMd">
-                Upload a CSV with your payout recipients. Required columns:{" "}
-                <strong>wallet_address</strong> and <strong>amount</strong> (in USDC).
-                Optional: name, email, memo.
-              </Text>
+              <BlockStack gap="100">
+                <Text as="h2" variant="headingMd">Upload recipients</Text>
+                <Text as="p" variant="bodyMd" tone="subdued">
+                  Upload a CSV with your payout recipients. Required columns:{" "}
+                  <Text as="span" fontWeight="semibold">wallet_address</Text> and{" "}
+                  <Text as="span" fontWeight="semibold">amount</Text> (in USDC). Optional: name, email, memo.
+                </Text>
+              </BlockStack>
 
-              <Banner tone="info">
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodySm">
-                    <strong>wallet_address</strong> — The recipient's Ethereum/Base wallet (starts with 0x)
-                  </Text>
-                  <Text as="p" variant="bodySm">
-                    <strong>amount</strong> — How much USDC to send (e.g. 100.00)
-                  </Text>
-                  <Text as="p" variant="bodySm">
-                    Don't have wallet addresses? Recipients can create a free Coinbase Wallet in under a minute.
-                  </Text>
-                </BlockStack>
-              </Banner>
+              <Box background="bg-surface-info" padding="300" borderRadius="300">
+                <InlineStack gap="300" blockAlign="start" wrap={false}>
+                  <Box paddingBlockStart="050">
+                    <Icon source={InfoIcon} tone="info" />
+                  </Box>
+                  <BlockStack gap="100">
+                    <Text as="p" variant="bodySm">
+                      <Text as="span" fontWeight="semibold">wallet_address</Text> — the recipient's Ethereum/Base wallet (starts with 0x)
+                    </Text>
+                    <Text as="p" variant="bodySm">
+                      <Text as="span" fontWeight="semibold">amount</Text> — how much USDC to send (e.g. 100.00)
+                    </Text>
+                    <Text as="p" variant="bodySm" tone="subdued">
+                      Don't have wallet addresses? Recipients can create a free Coinbase Wallet in under a minute.
+                    </Text>
+                  </BlockStack>
+                </InlineStack>
+              </Box>
 
               <DropZone onDrop={handleFileUpload} accept=".csv" type="file" variableHeight>
                 <DropZone.FileUpload actionHint="Accepts .csv files" />
               </DropZone>
 
-              <Text as="p" variant="bodySm" tone="subdued">Or paste CSV directly:</Text>
-              <textarea
+              <TextField
+                label="Or paste CSV directly"
                 value={csvText}
-                onChange={(e) => setCsvText(e.target.value)}
+                onChange={setCsvText}
                 placeholder={sampleContent}
-                rows={8}
-                style={{
-                  width: "100%",
-                  fontFamily: "monospace",
-                  fontSize: "13px",
-                  padding: "12px",
-                  border: "1px solid var(--p-color-border)",
-                  borderRadius: "8px",
-                  resize: "vertical",
-                  backgroundColor: "var(--p-color-bg-surface-secondary)",
-                }}
+                multiline={8}
+                monospaced
+                autoComplete="off"
               />
 
-              <InlineStack gap="200">
-                <Button variant="primary" onClick={handleParse}>
-                  Parse & Review
+              <InlineStack gap="200" wrap>
+                <Button variant="primary" icon={ImportIcon} onClick={handleParse}>
+                  Parse & review
                 </Button>
                 <Button onClick={() => setCsvText(sampleContent)}>
-                  Load Sample Data
+                  Load sample data
                 </Button>
-                <Button variant="plain" onClick={handleDownloadTemplate}>
-                  Download CSV Template
+                <Button variant="plain" icon={ExportIcon} onClick={handleDownloadTemplate}>
+                  Download CSV template
                 </Button>
               </InlineStack>
             </BlockStack>
@@ -439,7 +448,7 @@ export default function NewPayout() {
         {step === STEPS.REVIEW && parsed && (
           <Card>
             <BlockStack gap="400">
-              <Text as="h2" variant="headingMd">Review Payout</Text>
+              <Text as="h2" variant="headingMd">Review payout</Text>
 
               {parseErrors.length > 0 && (
                 <Banner tone="warning">
@@ -449,28 +458,26 @@ export default function NewPayout() {
                 </Banner>
               )}
 
-              <InlineStack gap="600" wrap>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodySm" tone="subdued">Recipients</Text>
-                  <Text as="p" variant="headingLg">{parsed.recipients.length}</Text>
-                </BlockStack>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodySm" tone="subdued">Payout Total</Text>
-                  <Text as="p" variant="headingLg">${parsed.totalAmount} USDC</Text>
-                </BlockStack>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodySm" tone="subdued">
-                    Fee (0.3%)
-                  </Text>
-                  <Text as="p" variant="headingLg">${parsed.feeAmount} USDC</Text>
-                </BlockStack>
-                <BlockStack gap="100">
-                  <Text as="p" variant="bodySm" tone="subdued">Total Cost</Text>
-                  <Text as="p" variant="headingLg" fontWeight="bold">
-                    ${totalWithFee} USDC
-                  </Text>
-                </BlockStack>
-              </InlineStack>
+              <Box background="bg-surface-secondary" padding="400" borderRadius="300">
+                <InlineGrid columns={{ xs: 2, sm: 4 }} gap="400">
+                  <BlockStack gap="100">
+                    <Text as="p" variant="bodyXs" tone="subdued">Recipients</Text>
+                    <Text as="p" variant="headingLg">{parsed.recipients.length}</Text>
+                  </BlockStack>
+                  <BlockStack gap="100">
+                    <Text as="p" variant="bodyXs" tone="subdued">Payout total</Text>
+                    <Text as="p" variant="headingLg">${parsed.totalAmount}</Text>
+                  </BlockStack>
+                  <BlockStack gap="100">
+                    <Text as="p" variant="bodyXs" tone="subdued">Fee (0.3%)</Text>
+                    <Text as="p" variant="headingLg">${parsed.feeAmount}</Text>
+                  </BlockStack>
+                  <BlockStack gap="100">
+                    <Text as="p" variant="bodyXs" tone="subdued">Total cost</Text>
+                    <Text as="p" variant="headingLg" fontWeight="bold">${totalWithFee}</Text>
+                  </BlockStack>
+                </InlineGrid>
+              </Box>
 
               <DataTable
                 columnContentTypes={["text", "numeric", "text", "text"]}
@@ -506,10 +513,20 @@ export default function NewPayout() {
                 </Banner>
               )}
 
-              <InlineStack gap="200">
-                <Button onClick={() => { setStep(STEPS.UPLOAD); setParsed(null); setParseErrors([]); }}>
-                  ← Back to Upload
+              <Divider />
+
+              <InlineStack align="space-between" blockAlign="center">
+                <Button
+                  icon={ArrowLeftIcon}
+                  onClick={() => { setStep(STEPS.UPLOAD); setParsed(null); setParseErrors([]); }}
+                >
+                  Back to upload
                 </Button>
+                {isConnected && hasSufficientBalance && (
+                  <Button variant="primary" icon={ArrowRightIcon} onClick={handleSend}>
+                    {needsApproval ? "Approve & send" : "Send payout"}
+                  </Button>
+                )}
               </InlineStack>
             </BlockStack>
           </Card>
@@ -518,24 +535,41 @@ export default function NewPayout() {
         {/* STEP: Transaction Progress */}
         {[STEPS.APPROVING, STEPS.EXECUTING, STEPS.RECORDING, STEPS.DONE].includes(step) && (
           <Card>
-            <BlockStack gap="400">
-              <Text as="h2" variant="headingMd">
-                {step === STEPS.DONE ? "Payout Complete" : "Sending Payout..."}
-              </Text>
+            <BlockStack gap="500">
+              <InlineStack gap="200" blockAlign="center">
+                {step === STEPS.DONE
+                  ? <Icon source={CheckCircleIcon} tone="success" />
+                  : <Spinner size="small" />}
+                <Text as="h2" variant="headingMd">
+                  {step === STEPS.DONE ? "Payout complete" : "Sending payout…"}
+                </Text>
+              </InlineStack>
 
-              <BlockStack gap="300">
-                {progressSteps.map((s) => {
+              <BlockStack gap="0">
+                {progressSteps.map((s, i) => {
                   if (s.skipped) return null;
-                  let icon = "○";
-                  let tone = "subdued";
-                  if (s.done) { icon = "✅"; tone = undefined; }
-                  else if (s.active) { icon = "⏳"; tone = undefined; }
-
+                  const state = s.done ? "done" : s.active ? "active" : "pending";
                   return (
-                    <InlineStack key={s.key} gap="200" blockAlign="center">
-                      <Text as="span" variant="bodyMd">{icon}</Text>
-                      <Text as="span" variant="bodyMd" tone={tone}>{s.label}</Text>
-                    </InlineStack>
+                    <Box key={s.key}>
+                      {i > 0 && <Box paddingBlock="100"><Divider /></Box>}
+                      <InlineStack gap="300" blockAlign="center">
+                        <StepIndicator state={state} />
+                        <Text
+                          as="span"
+                          variant="bodyMd"
+                          fontWeight={state === "pending" ? "regular" : "semibold"}
+                          tone={state === "pending" ? "subdued" : undefined}
+                        >
+                          {s.label}
+                        </Text>
+                        {state === "done" && (
+                          <Box><Badge tone="success">Done</Badge></Box>
+                        )}
+                        {state === "active" && (
+                          <Box><Badge tone="attention">In progress</Badge></Box>
+                        )}
+                      </InlineStack>
+                    </Box>
                   );
                 })}
               </BlockStack>
@@ -551,22 +585,22 @@ export default function NewPayout() {
               )}
 
               {step === STEPS.DONE && (
-                <BlockStack gap="300">
+                <BlockStack gap="400">
                   <Banner tone="success">
                     <Text as="p" variant="bodyMd">
                       {parsed?.recipients.length} recipients paid a total of ${parsed?.totalAmount} USDC.
                       Each recipient's USDC was sent directly from your wallet.
                     </Text>
                   </Banner>
-                  <InlineStack gap="200">
-                    <Button url={`https://basescan.org/tx/${sprayHash}`} target="_blank">
+                  <InlineStack gap="200" wrap>
+                    <Button variant="primary" url="/app">
+                      Back to dashboard
+                    </Button>
+                    <Button icon={ExternalIcon} url={`https://basescan.org/tx/${sprayHash}`} target="_blank">
                       View on BaseScan
                     </Button>
-                    <Button variant="primary" url="/app">
-                      Back to Dashboard
-                    </Button>
-                    <Button variant="plain" onClick={handleStartOver}>
-                      Send Another Payout
+                    <Button variant="plain" icon={RefreshIcon} onClick={handleStartOver}>
+                      Send another payout
                     </Button>
                   </InlineStack>
                 </BlockStack>
@@ -581,7 +615,7 @@ export default function NewPayout() {
             <BlockStack gap="400">
               <Banner tone="critical">
                 <BlockStack gap="100">
-                  <Text as="p" variant="bodyMd">Transaction failed</Text>
+                  <Text as="p" variant="bodyMd" fontWeight="semibold">Transaction failed</Text>
                   <Text as="p" variant="bodySm">{txError}</Text>
                 </BlockStack>
               </Banner>
@@ -589,11 +623,11 @@ export default function NewPayout() {
                 No funds were sent. You can retry or go back and edit your recipient list.
               </Text>
               <InlineStack gap="200">
-                <Button variant="primary" onClick={handleRetry}>
-                  Back to Review
+                <Button variant="primary" icon={ArrowLeftIcon} onClick={handleRetry}>
+                  Back to review
                 </Button>
-                <Button onClick={handleStartOver}>
-                  Start Over
+                <Button icon={RefreshIcon} onClick={handleStartOver}>
+                  Start over
                 </Button>
               </InlineStack>
             </BlockStack>
@@ -603,20 +637,33 @@ export default function NewPayout() {
         {/* Help section — always at bottom */}
         {step === STEPS.UPLOAD && (
           <Card>
-            <BlockStack gap="200">
+            <BlockStack gap="400">
               <Text as="h3" variant="headingSm">How it works</Text>
-              <Text as="p" variant="bodySm" tone="subdued">
-                1. Upload a CSV with wallet addresses and amounts
-              </Text>
-              <Text as="p" variant="bodySm" tone="subdued">
-                2. Review the payout summary and confirm recipients
-              </Text>
-              <Text as="p" variant="bodySm" tone="subdued">
-                3. Approve USDC spending (one-time per amount)
-              </Text>
-              <Text as="p" variant="bodySm" tone="subdued">
-                4. Sign the batch transaction — all recipients are paid in one go
-              </Text>
+              <BlockStack gap="300">
+                {[
+                  "Upload a CSV with wallet addresses and amounts.",
+                  "Review the payout summary and confirm recipients.",
+                  "Approve USDC spending (one-time per amount).",
+                  "Sign the batch transaction — all recipients are paid in one go.",
+                ].map((text, i) => (
+                  <InlineStack key={i} gap="300" blockAlign="center" wrap={false}>
+                    <Box
+                      background="bg-fill-brand"
+                      minWidth="24px"
+                      padding="050"
+                      borderRadius="full"
+                    >
+                      <div style={{ width: "24px", textAlign: "center" }}>
+                        <Text as="span" variant="bodySm" fontWeight="bold" tone="text-inverse">
+                          {i + 1}
+                        </Text>
+                      </div>
+                    </Box>
+                    <Text as="p" variant="bodyMd">{text}</Text>
+                  </InlineStack>
+                ))}
+              </BlockStack>
+              <Divider />
               <Text as="p" variant="bodySm" tone="subdued">
                 USDC goes directly from your wallet to each recipient on the Base network.
                 Spraay charges 0.3% per batch. Transactions are verifiable on BaseScan.
@@ -626,5 +673,25 @@ export default function NewPayout() {
         )}
       </BlockStack>
     </Page>
+  );
+}
+
+function StepIndicator({ state }) {
+  if (state === "done") {
+    return <Icon source={CheckCircleIcon} tone="success" />;
+  }
+  if (state === "active") {
+    return <Spinner size="small" />;
+  }
+  return (
+    <div
+      style={{
+        width: "20px",
+        height: "20px",
+        borderRadius: "50%",
+        border: "2px solid var(--p-color-border)",
+        boxSizing: "border-box",
+      }}
+    />
   );
 }
