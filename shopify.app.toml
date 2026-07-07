@@ -16,9 +16,17 @@ api_version = "2026-07"
   uri = "/webhooks/app/scopes_update"
   topics = [ "app/scopes_update" ]
 
+  [[webhooks.subscriptions]]
+  compliance_topics = [ "customers/data_request", "customers/redact", "shop/redact" ]
+  uri = "/webhooks"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products,write_metaobjects,write_metaobject_definitions"
+# Spraay sends batch USDC payouts on Base. It does not read or write Shopify
+# store resources, so it requests no access scopes. Add "read_orders" here later
+# if payouts are ever tied to order data (note: that is Protected Customer Data
+# and requires additional Shopify approval).
+scopes = ""
 
 [auth]
 redirect_urls = [
@@ -28,5 +36,4 @@ redirect_urls = [
 ]
 
 [build]
-include_config_on_deploy = true
 automatically_update_urls_on_dev = true
