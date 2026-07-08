@@ -17,6 +17,7 @@ import {
   parseCSV,
   sampleCSV,
   estimateSprayGas,
+  PASTE_PLACEHOLDER,
   BATCH_CONTRACT,
   USDC_BASE,
   BATCH_ABI,
@@ -428,10 +429,10 @@ export default function NewPayout() {
 
               <TextField
                 label="Or paste CSV directly"
-                helpText="Format: wallet_address,amount — one recipient per line. Keep the header row on top (name, email, memo are optional)."
+                helpText="Format: wallet_address,amount — one recipient per line. The header row is optional; if you paste addresses straight in, we assume the first two columns are wallet_address and amount."
                 value={csvText}
                 onChange={setCsvText}
-                placeholder={sampleContent}
+                placeholder={PASTE_PLACEHOLDER}
                 multiline={8}
                 monospaced
                 autoComplete="off"

@@ -107,47 +107,91 @@ export function estimateSprayGas(recipientCount) {
 /**
  * Parse CSV text into structured recipient list.
  * Expects columns: wallet_address (required), amount (required), name, email, memo
- * Flexible header matching — looks for keywords in column names.
+ *
+ * Header handling is forgiving:
+ *   - If the first row already looks like data (contains a 0x… address), the CSV
+ *     is treated as headerless with assumed columns [wallet_address, amount,
+ *     name, email, memo].
+ *   - Otherwise the first row is a header, matched flexibly so variations like
+ *     "wallet address", "address", "wallet", or "recipient" all resolve to the
+ *     address column (spaces, underscores, and hyphens are ignored).
  */
+
+const ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/;
+
+// Normalize a header cell for matching: lowercase and drop spaces/underscores/hyphens.
+// So "Wallet Address", "wallet_address", and "wallet-address" all become "walletaddress".
+const normalizeHeader = (h) => h.trim().toLowerCase().replace(/[\s_-]+/g, "");
+
+const COLUMN_ALIASES = {
+  address: ["walletaddress", "wallet", "address", "walletaddr", "recipient", "recipientaddress", "recipientwallet", "to", "payee", "payeeaddress"],
+  amount: ["amount", "value", "payout", "payment", "usdc", "usd", "total"],
+  name: ["name", "recipientname", "fullname"],
+  email: ["email", "emailaddress", "mail"],
+  memo: ["memo", "note", "notes", "description", "reference", "ref"],
+};
+
+function matchColumn(normalizedHeaders, aliases) {
+  return normalizedHeaders.findIndex((h) => aliases.includes(h));
+}
+
 export function parseCSV(csvText) {
-  const lines = csvText.trim().split("\n");
-  if (lines.length < 2) {
-    return { recipients: [], errors: ["CSV must have a header row and at least one data row."] };
+  const lines = csvText
+    .trim()
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    return { recipients: [], errors: ["CSV is empty. Paste or upload recipient data."] };
   }
 
-  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
   const errors = [];
 
-  // Flexible column matching
-  const addressIdx = headers.findIndex((h) =>
-    ["wallet", "address", "wallet_address", "walletaddress", "recipient"].includes(h)
-  );
-  const amountIdx = headers.findIndex((h) =>
-    ["amount", "value", "payout", "payment"].includes(h)
-  );
-  const nameIdx = headers.findIndex((h) => ["name", "recipient_name", "full_name"].includes(h));
-  const emailIdx = headers.findIndex((h) => ["email", "email_address", "mail"].includes(h));
-  const memoIdx = headers.findIndex((h) => ["memo", "note", "description", "reference"].includes(h));
+  // Decide whether the first row is a header or already data. A header row never
+  // contains a valid wallet address; if row 1 has one, the file is headerless.
+  const firstCols = lines[0].split(",").map((c) => c.trim());
+  const headerless = firstCols.some((c) => ADDRESS_RE.test(c));
 
-  if (addressIdx === -1) {
-    return { recipients: [], errors: ["Missing required column: wallet address (wallet, address, wallet_address, or recipient)"] };
-  }
-  if (amountIdx === -1) {
-    return { recipients: [], errors: ["Missing required column: amount (amount, value, payout, or payment)"] };
+  let addressIdx, amountIdx, nameIdx, emailIdx, memoIdx, dataStart;
+
+  if (headerless) {
+    // Assume positional columns: wallet_address, amount, name, email, memo.
+    addressIdx = 0;
+    amountIdx = 1;
+    nameIdx = 2;
+    emailIdx = 3;
+    memoIdx = 4;
+    dataStart = 0;
+  } else {
+    const headers = firstCols.map(normalizeHeader);
+    addressIdx = matchColumn(headers, COLUMN_ALIASES.address);
+    amountIdx = matchColumn(headers, COLUMN_ALIASES.amount);
+    nameIdx = matchColumn(headers, COLUMN_ALIASES.name);
+    emailIdx = matchColumn(headers, COLUMN_ALIASES.email);
+    memoIdx = matchColumn(headers, COLUMN_ALIASES.memo);
+    dataStart = 1;
+
+    if (addressIdx === -1) {
+      return { recipients: [], errors: ['Missing required column: wallet address (accepted: "wallet_address", "wallet address", "address", "wallet", or "recipient")'] };
+    }
+    if (amountIdx === -1) {
+      return { recipients: [], errors: ['Missing required column: amount (accepted: "amount", "value", "payout", or "payment")'] };
+    }
+    if (lines.length < 2) {
+      return { recipients: [], errors: ["CSV has a header row but no recipient rows."] };
+    }
   }
 
   const recipients = [];
 
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    const cols = line.split(",").map((c) => c.trim());
+  for (let i = dataStart; i < lines.length; i++) {
+    const cols = lines[i].split(",").map((c) => c.trim());
     const address = cols[addressIdx] || "";
     const amount = cols[amountIdx] || "";
 
     // Validate address
-    if (!address.match(/^0x[a-fA-F0-9]{40}$/)) {
+    if (!ADDRESS_RE.test(address)) {
       errors.push(`Row ${i + 1}: Invalid wallet address "${address}"`);
       continue;
     }
@@ -190,3 +234,11 @@ export function sampleCSV() {
 0x1234567890abcdef1234567890abcdef12345678,100.00,Alice,alice@example.com,January payment
 0xabcdefabcdefabcdefabcdefabcdefabcdefabcd,75.50,Bob,bob@example.com,Affiliate payout`;
 }
+
+/**
+ * Minimal placeholder shown in the "paste CSV" box — leads with the header row
+ * so merchants immediately see the exact expected format (wallet_address,amount).
+ */
+export const PASTE_PLACEHOLDER = `wallet_address,amount
+0x1234567890abcdef1234567890abcdef12345678,100.00
+0xabcdefabcdefabcdefabcdefabcdefabcdefabcd,75.50`;
