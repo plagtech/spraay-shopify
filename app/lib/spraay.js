@@ -79,6 +79,32 @@ export const ERC20_ABI = [
 ];
 
 /**
+ * Estimate a safe explicit gas limit for a sprayToken batch.
+ *
+ * We set gas explicitly instead of letting the wallet/RPC auto-estimate.
+ * Auto-estimation via MetaMask's default RPC (Infura) was returning an absurd
+ * ~140M and getting rejected by Infura's 25M per-tx cap
+ * ("exceeds maximum per-tx gas limit"). A fixed limit sidesteps estimation.
+ *
+ * sprayToken does one ERC20 transferFrom per recipient (plus the fee transfer
+ * and contract overhead). ~60k gas/recipient covers the worst case of paying a
+ * fresh address (cold 20k SSTORE + transfer costs) with headroom. A 2-recipient
+ * batch lands at ~220k; a full 200-recipient batch at ~12.1M — comfortably under
+ * Infura's 25M cap.
+ *
+ * @param {number} recipientCount
+ * @returns {bigint} gas limit
+ */
+export function estimateSprayGas(recipientCount) {
+  const BASE = 100000n; // tx base + contract entry + fee transfer + allowance check
+  const PER_RECIPIENT = 60000n; // ERC20 transferFrom to a (possibly fresh) address
+  const CAP = 24000000n; // stay just under Infura's 25M per-tx limit
+  const count = BigInt(Math.max(0, recipientCount || 0));
+  const gas = BASE + count * PER_RECIPIENT;
+  return gas > CAP ? CAP : gas;
+}
+
+/**
  * Parse CSV text into structured recipient list.
  * Expects columns: wallet_address (required), amount (required), name, email, memo
  * Flexible header matching — looks for keywords in column names.

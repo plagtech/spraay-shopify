@@ -16,6 +16,7 @@ import { WalletButton } from "../components/WalletButton";
 import {
   parseCSV,
   sampleCSV,
+  estimateSprayGas,
   BATCH_CONTRACT,
   USDC_BASE,
   BATCH_ABI,
@@ -178,6 +179,9 @@ export default function NewPayout() {
         abi: BATCH_ABI,
         functionName: "sprayToken",
         args: [USDC_BASE, recipients],
+        // Explicit gas limit — skip auto-estimation (which was ballooning to
+        // ~140M and being rejected by Infura's 25M cap).
+        gas: estimateSprayGas(recipients.length),
       });
     }
   }, [step, isApproveConfirmed, parsed, writeSpray, refetchAllowance]);
@@ -275,6 +279,9 @@ export default function NewPayout() {
         abi: BATCH_ABI,
         functionName: "sprayToken",
         args: [USDC_BASE, recipients],
+        // Explicit gas limit — skip auto-estimation (which was ballooning to
+        // ~140M and being rejected by Infura's 25M cap).
+        gas: estimateSprayGas(recipients.length),
       });
     }
   }, [parsed, isConnected, needsApproval, totalWithFee, writeApprove, writeSpray, resetApprove, resetSpray]);
@@ -421,6 +428,7 @@ export default function NewPayout() {
 
               <TextField
                 label="Or paste CSV directly"
+                helpText="Format: wallet_address,amount — one recipient per line. Keep the header row on top (name, email, memo are optional)."
                 value={csvText}
                 onChange={setCsvText}
                 placeholder={sampleContent}
