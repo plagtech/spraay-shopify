@@ -3,7 +3,7 @@
 client_id = "955895a982d9e495af60ecf5e4f0d9c1"
 application_url = "https://spraay-shopify-production.up.railway.app"
 embedded = true
-name = "Spraay"
+name = "Spraay Batch Payouts"
 
 [webhooks]
 api_version = "2026-07"
