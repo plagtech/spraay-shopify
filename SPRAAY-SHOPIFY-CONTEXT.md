@@ -92,6 +92,24 @@ NOTE: Do NOT use `metaMask()` from `wagmi/connectors` — it doesn't exist in wa
 6. **Push all changes to GitHub** — Nothing from this session was pushed
 7. **Shopify App Store submission** — After Railway is live
 
+## Railway Deployment Gotchas
+- **`PORT=3000` MUST be set as a Railway service variable.** The Dockerfile's
+  `EXPOSE 3000` set the service domain's `targetPort` to 3000, but `remix-serve`
+  otherwise binds to Railway's injected `PORT` (8080). The mismatch makes
+  Railway's proxy route to :3000 where nothing listens → **502 "Application
+  failed to respond" on every route**. Pinning `PORT=3000` makes remix-serve
+  bind to 3000, matching `targetPort` and `EXPOSE`. This variable is
+  load-bearing — if the service is recreated, re-add it (or set the domain's
+  target port to whatever the app binds).
+- A 502 with the deployment showing "Online"/instance RUNNING is a port/proxy
+  mismatch, NOT a crash. Check logs first: if `prisma migrate deploy` succeeds
+  and `remix-serve` prints its listen URL, the app is healthy and the problem is
+  routing. (The Supabase password rotation was a red herring — Railway's
+  DATABASE_URL/DIRECT_URL connect fine via the pooler host.)
+- Diagnose with: `railway link -p pretty-rebirth -e production -s spraay-shopify`,
+  then `railway logs` and `railway status --json` (look for `targetPort`). The
+  Railway service `spraay-shopify` lives in project **pretty-rebirth**.
+
 ## Gotchas
 - The `spraay/` subfolder structure means file paths in commands need to account for it
 - Root-level `shopify.web.toml` must NOT exist (causes "conflicting configurations" error)
