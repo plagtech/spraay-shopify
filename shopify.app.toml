@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "955895a982d9e495af60ecf5e4f0d9c1"
-application_url = "https://spraay-shopify-production.up.railway.app"
+application_url = "https://app.spraay.app"
 embedded = true
 name = "Spraay Batch Payouts"
 
@@ -30,9 +30,9 @@ scopes = ""
 
 [auth]
 redirect_urls = [
-  "https://spraay-shopify-production.up.railway.app/auth/callback",
-  "https://spraay-shopify-production.up.railway.app/auth/shopify/callback",
-  "https://spraay-shopify-production.up.railway.app/api/auth/callback",
+  "https://app.spraay.app/auth/callback",
+  "https://app.spraay.app/auth/shopify/callback",
+  "https://app.spraay.app/api/auth/callback",
 ]
 
 [build]

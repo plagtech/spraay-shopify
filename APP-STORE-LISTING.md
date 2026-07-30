@@ -1,5 +1,11 @@
 # Spraay — Batch Crypto Payouts · App Store Listing
 
+> **Note:** This listing copy was prepared for a Shopify App Store submission. The
+> app is now distributed as open-source via GitHub — merchants self-host it and
+> install it on their store as a custom distribution app. See the
+> [README](README.md) for setup. The copy below is kept for reference and for
+> anyone who forks this app and wants to pursue a listing of their own.
+
 ## App Name
 Spraay — Batch Crypto Payouts
 

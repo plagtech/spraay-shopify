@@ -1,6 +1,11 @@
 {
   "name": "spraay",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/plagtech/spraay-shopify.git"
+  },
   "scripts": {
     "build": "remix vite:build",
     "dev": "shopify app dev",
@@ -76,5 +81,5 @@
     "minimatch": "9.0.5",
     "vite": "^6.2.2"
   },
-  "author": "Hp"
+  "author": "PlagTech"
 }
