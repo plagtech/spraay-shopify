@@ -25,6 +25,10 @@ on Shopify are checkout tools; this is the inverse.
 - **Built with Shopify Polaris**, embedded natively in the Shopify admin.
 - **Non-custodial** — you connect your own wallet (MetaMask, Coinbase Smart Wallet), and USDC moves from your wallet straight to recipients. Spraay never holds funds.
 
+> 🤖 **Using an OpenClaw agent?** Skip the manual setup:
+> `openclaw skills install @plagtech/spraay-shopify-selfhost` walks you through deployment,
+> and `@plagtech/shopify-batch-payouts` runs payouts via the Spraay gateway.
+
 ## Screenshots
 
 | Dashboard | New payout |
@@ -216,6 +220,8 @@ Issues and pull requests are welcome. Run `npm run lint` before opening a PR.
 
 ## Links
 
+- **ClawHub skill (agent payouts)** — <https://clawhub.ai/plagtech/shopify-batch-payouts>
+- **ClawHub skill (deploy assistant)** — <https://clawhub.ai/plagtech/spraay-shopify-selfhost>
 - **Spraay Protocol** — https://spraay.app
 - **Gateway** — https://gateway.spraay.app
 - **MCP Server** — https://smithery.ai/servers/Plagtech/Spraay-x402-mcp
